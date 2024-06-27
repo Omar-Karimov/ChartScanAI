@@ -84,7 +84,7 @@ with st.sidebar:
 
     # Model Options
     confidence = float(st.slider(
-        "Select Model Confidence", 25, 100, 40)) / 100
+        "Select Model Confidence", 25, 100, 30)) / 100
 
 # Creating main page heading
 st.title("ChartScanAI")
