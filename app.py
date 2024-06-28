@@ -22,7 +22,7 @@ st.set_page_config(
 )
 
 # Function to download and plot chart
-def download_and_plot_chart(ticker, interval="1d", chunk_size=180, figsize=(18, 6.5), dpi=100):
+def generate_chart(ticker, interval="1d", chunk_size=180, figsize=(18, 6.5), dpi=100):
     if interval == "1h":
         end_date = datetime.now()
         start_date = end_date - timedelta(days=730)
@@ -41,18 +41,21 @@ def download_and_plot_chart(ticker, interval="1d", chunk_size=180, figsize=(18, 
         # Select only the latest 180 candles
         data = data.iloc[-chunk_size:]
 
-        # Save plot with desired size
-        save_path = f"{ticker}_latest_{chunk_size}_candles.png"
-        save = dict(fname=save_path, dpi=dpi)
-        mpf.plot(data, type="candle", style="yahoo",
-                 title=f"{ticker} Latest {chunk_size} Candles",
-                 axisoff=True,
-                 ylabel="",
-                 ylabel_lower="",
-                 volume=False,
-                 figsize=figsize,
-                 savefig=save)
-        return save_path
+        # Plot the chart
+        fig, ax = mpf.plot(data, type="candle", style="yahoo",
+                           title=f"{ticker} Latest {chunk_size} Candles",
+                           axisoff=True,
+                           ylabel="",
+                           ylabel_lower="",
+                           volume=False,
+                           figsize=figsize,
+                           returnfig=True)
+
+        # Save the plot to a BytesIO object
+        buffer = BytesIO()
+        fig.savefig(buffer, format='png', dpi=dpi)  # Ensure DPI is set here
+        buffer.seek(0)
+        return buffer
     else:
         st.error("No data found for the specified ticker and interval.")
         return None
@@ -63,16 +66,23 @@ with st.sidebar:
     st.image(logo_url, use_column_width="auto")
     st.write("")
     st.header("Configurations")     # Adding header to sidebar
-    # Section to download and plot chart
-    st.subheader("Download and Plot Chart")
+    # Section to generate and download chart
+    st.subheader("Generate Chart")
     ticker = st.text_input("Enter Ticker Symbol (e.g., AAPL):")
     interval = st.selectbox("Select Interval", ["1d", "1h", "1wk"])
-    if st.button("Download and Plot Chart"):
+    chunk_size = 180  # Default chunk size
+    if st.button("Generate Chart"):
         if ticker:
-            chart_path = download_and_plot_chart(ticker, interval=interval)
-            if chart_path:
-                st.success(f"Chart downloaded. Right-click to save: [Download {ticker} Chart]({chart_path})")
-                st.image(chart_path, caption=f"{ticker} Chart", use_column_width=True)
+            chart_buffer = generate_chart(ticker, interval=interval, chunk_size=chunk_size)
+            if chart_buffer:
+                st.success(f"Chart generated successfully.")
+                st.download_button(
+                    label=f"Download {ticker} Chart",
+                    data=chart_buffer,
+                    file_name=f"{ticker}_latest_{chunk_size}_candles.png",
+                    mime="image/png"
+                )
+                st.image(chart_buffer, caption=f"{ticker} Chart", use_column_width=True)
         else:
             st.error("Please enter a valid ticker symbol.")
     st.write("")
@@ -87,11 +97,18 @@ with st.sidebar:
 
 # Creating main page heading
 st.title("ChartScanAI")
-st.caption('📈 To use the app, you have two options:')
-st.caption('1. **Upload Your Own Image:** Upload a candlestick chart image from the web using the sidebar.')
-st.caption('2. **Download and Plot Chart:** Use the "Download and Plot Chart" section by providing the ticker symbol and interval to generate and download a candlestick chart. Then, upload the downloaded image using the sidebar.')
-st.caption('After uploading the image, click the :blue[Detect Objects] button to analyze the chart.')
+st.caption('📈 To use the app, choose one of the following options:')
 
+st.markdown('''
+**Option 1: Upload Your Own Image**
+1. **Upload Image:** Use the sidebar to upload a candlestick chart image from your local PC.
+2. **Detect Objects:** Click the :blue[Detect Objects] button to analyze the uploaded chart.
+
+**Option 2: Generate and Analyze Chart**
+1. **Generate Chart:** Provide the ticker symbol and interval in the sidebar to create and download a chart (latest 180 candles).
+2. **Upload Generated Chart:** Use the sidebar to upload the generated chart image.
+3. **Detect Objects:** Click the :blue[Detect Objects] button to analyze the generated chart.
+''')
 
 # Creating two columns on the main page
 col1, col2 = st.columns(2)
