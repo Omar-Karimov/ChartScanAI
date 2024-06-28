@@ -2,10 +2,9 @@ import streamlit as st
 import yfinance as yf
 import mplfinance as mpf
 import pandas as pd
-import os
 from PIL import Image
-from io import BytesIO
 from datetime import datetime, timedelta
+from io import BytesIO
 from ultralytics import YOLO
 
 # Replace the relative path to your weight file
@@ -72,7 +71,7 @@ with st.sidebar:
         if ticker:
             chart_path = download_and_plot_chart(ticker, interval=interval)
             if chart_path:
-                st.success(f"Chart downloaded and saved as {chart_path}")
+                st.success(f"Chart downloaded. Right-click to save: [Download {ticker} Chart]({chart_path})")
                 st.image(chart_path, caption=f"{ticker} Chart", use_column_width=True)
         else:
             st.error("Please enter a valid ticker symbol.")
